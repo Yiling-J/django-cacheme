@@ -1,12 +1,17 @@
+import zlib
+
+from datetime import datetime, timedelta
+
 from django.conf import settings
 from django_redis import get_redis_connection
 
 
 CACHEME = {
-    'REDIS_CACHE_PREFIX': 'CM',  # key prefix for cache
+    'REDIS_CACHE_PREFIX': 'CM:',  # key prefix for cache
     'REDIS_CACHE_SCAN_COUNT': 10,
     'THUNDERING_HERD_RETRY_COUNT': 5,
-    'THUNDERING_HERD_RETRY_TIME': 20
+    'THUNDERING_HERD_RETRY_TIME': 20,
+    'HASH_TTL_BUCKET_COUNT': 20
 }
 
 CACHEME.update(getattr(settings, 'CACHEME', {}))
@@ -88,3 +93,42 @@ def invalid_pattern(pattern):
     for keys in chunks:
         if keys:
             conn.unlink(*list(keys))
+
+
+def get_epoch(seconds=0):
+    dt = datetime.utcnow() + timedelta(seconds=seconds)
+    return int(dt.timestamp())
+
+
+def get_metakey(key, field):
+    raw = '>'.join([key, field])
+    return '%s%s:%s' % (
+        CACHEME.REDIS_CACHE_PREFIX,
+        'Meta:Expire-Buckets:',
+        zlib.crc32(raw.encode()) % CACHEME.HASH_TTL_BUCKET_COUNT
+    )
+
+
+def hset_with_ttl(key, field, value, ttl):
+    raw = '>'.join([key, field])
+    conn = get_redis_connection(CACHEME.REDIS_CACHE_ALIAS)
+    pipe = conn.pipeline()
+    pipe.zadd(get_metakey(key, field), get_epoch(ttl), raw)
+    pipe.hset(key, field, value)
+    pipe.execute()
+
+
+def hget_with_ttl(key, field):
+    conn = get_redis_connection(CACHEME.REDIS_CACHE_ALIAS)
+    pipe = conn.pipeline()
+    metadataKey = get_metakey(key, field)
+    now = get_epoch()
+
+    expired = conn.zrangeByScore(metadataKey, 0, now)
+    for raw_key in expired:
+        key, field = split_key(raw_key)
+        pipe.hdel(key, field)
+    pipe.zremrangeByScore(metadataKey, 0, now)
+
+    pipe.hget(key, field)
+    return pipe.execute()[-1]
