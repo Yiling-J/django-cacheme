@@ -113,7 +113,7 @@ def hset_with_ttl(key, field, value, ttl):
     raw = '>'.join([key, field])
     conn = get_redis_connection(CACHEME.REDIS_CACHE_ALIAS)
     pipe = conn.pipeline()
-    pipe.zadd(get_metakey(key, field), get_epoch(ttl), raw)
+    pipe.zadd(get_metakey(key, field), {raw: get_epoch(ttl)})
     pipe.hset(key, field, value)
     pipe.execute()
 
@@ -124,11 +124,11 @@ def hget_with_ttl(key, field):
     metadataKey = get_metakey(key, field)
     now = get_epoch()
 
-    expired = conn.zrangeByScore(metadataKey, 0, now)
+    expired = conn.zrangebyscore(metadataKey, 0, now)
     for raw_key in expired:
-        key, field = split_key(raw_key)
-        pipe.hdel(key, field)
-    pipe.zremrangeByScore(metadataKey, 0, now)
+        key_del, field_del = split_key(raw_key)
+        pipe.hdel(key_del, field_del)
+    pipe.zremrangebyscore(metadataKey, 0, now)
 
     pipe.hget(key, field)
     return pipe.execute()[-1]

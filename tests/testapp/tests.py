@@ -1,3 +1,4 @@
+import mock
 import pickle
 import time
 import datetime
@@ -247,11 +248,33 @@ class CacheTestCase(BaseTestCase):
     def cache_timeout(self, n):
         return n
 
-    def test_time_out(self):
+    @cacheme(
+        key=lambda c: "CACHE:TO2",
+        timeout=1
+    )
+    def cache_timeout2(self, n):
+        return n
+
+    @cacheme(
+        key=lambda c: "CACHE:TO3",
+        timeout=2
+    )
+    def cache_timeout3(self, n):
+        return n
+
+    @mock.patch('django_cacheme.utils.zlib.crc32', return_value=32)
+    def test_time_out(self, m):
         self.assertEqual(self.cache_timeout(1), 1)
         self.assertEqual(self.cache_timeout(2), 1)
+        self.assertEqual(self.cache_timeout2(1), 1)
+        self.assertEqual(self.cache_timeout2(2), 1)
         time.sleep(1.02)
         self.assertEqual(self.cache_timeout(2), 2)
+        self.assertEqual(self.cache_timeout2(2), 2)
+        self.assertEqual(self.cache_timeout3(1), 1)
+        time.sleep(1.02)
+        self.assertEqual(self.cache_timeout2(3), 3)
+        self.assertEqual(self.cache_timeout3(3), 1)
 
     @cacheme(
         key=lambda c: "CACHE:TH",

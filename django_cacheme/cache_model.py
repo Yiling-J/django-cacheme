@@ -8,7 +8,7 @@ from django.db.models.signals import m2m_changed, post_delete, post_save
 from django_redis import get_redis_connection
 from inspect import _signature_from_function, Signature
 
-from .utils import split_key, invalid_cache, flat_list, CACHEME
+from .utils import split_key, invalid_cache, flat_list, CACHEME, hget_with_ttl, hset_with_ttl
 
 
 logger = logging.getLogger('cacheme')
@@ -132,7 +132,10 @@ class CacheMe(object):
 
     def get_key(self, key):
         key, field = split_key(key)
-        result = self.conn.hget(key, field)
+        if self.timeout:
+            result = hget_with_ttl(key, field)
+        else:
+            result = self.conn.hget(key, field)
 
         if result:
             result = pickle.loads(result)
@@ -142,10 +145,10 @@ class CacheMe(object):
         self.keys = key
         value = pickle.dumps(value)
         key, field = split_key(key)
-        result = self.conn.hset(key, field, value)
         if self.timeout:
-            self.conn.expire(key, self.timeout)
-        return result
+            hset_with_ttl(key, field, value, self.timeout)
+        else:
+            self.conn.hset(key, field, value)
 
     def push_key(self, key, value):
         return self.conn.sadd(key, value)
