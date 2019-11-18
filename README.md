@@ -35,8 +35,7 @@ CACHEME = {
     'REDIS_CACHE_ALIAS': 'cacheme',  # your CACHES alias name in settings, optional, 'default' as default
     'REDIS_CACHE_PREFIX': 'MYCACHE:',  # cacheme key prefix, optional, 'CM:' as default
     'THUNDERING_HERD_RETRY_COUNT': 5,  # thundering herd retry count, if key missing, default 5
-    'THUNDERING_HERD_RETRY_TIME': 20,  # thundering herd wait time between each retry, default 20
-    'HASH_EXPIRE_BUCKET_COUNT': 20 # count of buckets to store keys with timeout, default 20
+    'THUNDERING_HERD_RETRY_TIME': 20  # thundering herd wait time between each retry, default 20
 }
 ```
 
@@ -213,7 +212,7 @@ fields to json, then cache for that json should be invalid, there is no signal f
 then create validations in admin. Syntax is same as redis scan patterns, for example, "*" means remove all.
 * How cacheme avoid thundering herds: if there is stale data, use stale data until new data fill in, if there is no stale data, just wait a short time
 and retry.
-* For keys with timeout set, because cacheme store k/v using hash, we use a simple crc32 partitioning way(https://redis.io/topics/partitioning) to store meta data into buckets, and each bucket is a sorted set with expire time as score for keys.
+* For keys with timeout set, because cacheme store k/v using hash, we also store timeout in another redis ordered set
 * There is another thing you can do to avoid thundering herds, if you use cacheme in a class, for example a `Serializer`,
 and cache many methods in this class, and, order of these methods does not matter. Then you can make the order of call to theses methods randomly.
 For example, if your class has 10 cached methods, and 100 clients call this method same time, then some clients will call method1 first, some will call

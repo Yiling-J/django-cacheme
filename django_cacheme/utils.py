@@ -1,5 +1,3 @@
-import zlib
-
 from datetime import datetime, timedelta
 
 from django.conf import settings
@@ -10,8 +8,7 @@ CACHEME = {
     'REDIS_CACHE_PREFIX': 'CM:',  # key prefix for cache
     'REDIS_CACHE_SCAN_COUNT': 10,
     'THUNDERING_HERD_RETRY_COUNT': 5,
-    'THUNDERING_HERD_RETRY_TIME': 20,
-    'HASH_TTL_BUCKET_COUNT': 20
+    'THUNDERING_HERD_RETRY_TIME': 20
 }
 
 CACHEME.update(getattr(settings, 'CACHEME', {}))
@@ -101,11 +98,10 @@ def get_epoch(seconds=0):
 
 
 def get_metakey(key, field):
-    raw = '>'.join([key, field])
     return '%s%s:%s' % (
         CACHEME.REDIS_CACHE_PREFIX,
         'Meta:Expire-Buckets:',
-        zlib.crc32(raw.encode()) % CACHEME.HASH_TTL_BUCKET_COUNT
+        key
     )
 
 

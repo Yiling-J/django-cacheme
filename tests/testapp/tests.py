@@ -1,4 +1,3 @@
-import mock
 import pickle
 import time
 import datetime
@@ -262,20 +261,54 @@ class CacheTestCase(BaseTestCase):
     def cache_timeout3(self, n):
         return n
 
-    @mock.patch('django_cacheme.utils.zlib.crc32', return_value=32)
-    def test_time_out(self, m):
+    def test_time_out(self):
         self.assertEqual(self.cache_timeout(1), 1)
         self.assertEqual(self.cache_timeout(2), 1)
         self.assertEqual(self.cache_timeout2(1), 1)
         self.assertEqual(self.cache_timeout2(2), 1)
-        time.sleep(1.02)
+        time.sleep(1.04)
         self.assertEqual(self.cache_timeout(2), 2)
         self.assertEqual(self.cache_timeout2(2), 2)
         self.assertEqual(self.cache_timeout3(1), 1)
         self.assertEqual(self.cache_timeout2(3), 2)
-        time.sleep(1.02)
+        time.sleep(1.04)
         self.assertEqual(self.cache_timeout2(3), 3)
         self.assertEqual(self.cache_timeout3(3), 1)
+
+    @cacheme(
+        key=lambda c: "Test:123",
+        invalid_keys=lambda c: ["User:%s" % c.user1.id],
+        invalid_models=[TestUser],
+        timeout=1
+    )
+    def cache_timeout_signal(self, user1, user2):
+        return {'results': [{'id': user1.id}, {'id': user2.id}], 'check': self.check}
+
+    def test_timeout_with_signal(self):
+        user1 = TestUser.objects.create(name='test1')
+        user2 = TestUser.objects.create(name='test2')
+        self.check = 1
+
+        expect = {'results': [{'id': user1.id}, {'id': user2.id}], 'check': 1}
+
+        result = self.cache_timeout_signal(user1, user2)
+        self.assertEqual(result, expect)
+
+        self.check = 2
+
+        user1.name += 'cc'
+        user1.save()
+
+        expect['check'] = 2
+        result = self.cache_timeout_signal(user1, user2)
+        self.assertEqual(result, expect)
+
+        self.check = 3
+        time.sleep(1.04)
+
+        expect['check'] = 3
+        result = self.cache_timeout_signal(user1, user2)
+        self.assertEqual(result, expect)
 
     @cacheme(
         key=lambda c: "CACHE:TH",

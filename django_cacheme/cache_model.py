@@ -66,7 +66,8 @@ class CacheMe(object):
 
             key = self.key_prefix + self.key(self.container)
 
-            result = self.get_key(key)
+            if self.timeout:
+                result = self.get_key(key)
 
             if self.conn.srem(self.deleted, key):
                 result = self.function(*args, **kwargs)
@@ -74,6 +75,9 @@ class CacheMe(object):
                 self.container.cacheme_result = result
                 self.add_to_invalid_list(key, args, kwargs)
                 return result
+
+            if self.timeout is None:
+                result = self.get_key(key)
 
             if result is None:
 
