@@ -124,7 +124,6 @@ def hget_with_ttl(key, field):
     now = get_epoch()
 
     expired = conn.zrangebyscore(metadataKey, 0, now)
-    print(expired)
     if expired:
         conn.sadd(CACHEME.REDIS_CACHE_PREFIX + 'delete', *expired)
     pipe.zremrangebyscore(metadataKey, 0, now)
