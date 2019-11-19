@@ -29,7 +29,6 @@ install:
 - travis_retry pip install $DJANGO
 
 script:
-- redis-cli flushall
 - coverage run --rcfile=.coveragerc runtests.py
 
 after_success:
