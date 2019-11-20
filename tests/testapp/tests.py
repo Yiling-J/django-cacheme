@@ -256,7 +256,7 @@ class CacheTestCase(BaseTestCase):
 
     @cacheme(
         key=lambda c: "CACHE:TO3",
-        timeout=2
+        timeout=3
     )
     def cache_timeout3(self, n):
         return n
@@ -266,12 +266,12 @@ class CacheTestCase(BaseTestCase):
         self.assertEqual(self.cache_timeout(2), 1)
         self.assertEqual(self.cache_timeout2(1), 1)
         self.assertEqual(self.cache_timeout2(2), 1)
-        time.sleep(1.04)
+        time.sleep(1.02)
         self.assertEqual(self.cache_timeout(2), 2)
         self.assertEqual(self.cache_timeout2(2), 2)
         self.assertEqual(self.cache_timeout3(1), 1)
         self.assertEqual(self.cache_timeout2(3), 2)
-        time.sleep(1.04)
+        time.sleep(1.02)
         self.assertEqual(self.cache_timeout2(3), 3)
         self.assertEqual(self.cache_timeout3(3), 1)
 
