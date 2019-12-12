@@ -9,13 +9,14 @@ setup(
     author="Yiling",
     author_email="njjyl723@gmail.com",
     license="BSD-3-Clause",
-    version='v0.1.0',
+    version='v0.1.1',
     packages=[
         "django_cacheme",
     ],
     description=description,
     python_requires=">=3.5",
     install_requires=[
+        "cacheme>=0.0.9"
         "django_redis>=4.10.0",
     ],
     zip_safe=False,
