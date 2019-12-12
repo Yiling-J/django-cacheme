@@ -1,11 +1,11 @@
 from django import forms
 from django.contrib import admin
 from .models import Invalidation
-from .cache_model import cacheme_tags
+from .cache_model import CacheMe as cacheme
 
 
 def get_cache_tags():
-    return [(i, i) for i in cacheme_tags.keys()]
+    return [(i, i) for i in cacheme.tags.keys()]
 
 
 class InvalidationForm(forms.ModelForm):

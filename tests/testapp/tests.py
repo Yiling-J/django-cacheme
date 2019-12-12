@@ -9,7 +9,7 @@ from django.test import TestCase
 from django_redis import get_redis_connection
 
 from .models import TestUser, Book
-from django_cacheme import cacheme, cacheme_tags
+from django_cacheme import cacheme
 from django_cacheme.models import Invalidation
 
 from django.contrib.auth.models import User
@@ -183,11 +183,11 @@ class CacheTestCase(BaseTestCase):
         self.cache_inst_1()
         self.cache_inst_2()
         self.cache_inst_3()
-        self.assertEqual(cacheme_tags['cache_inst_1'].keys, {b'TEST:INST:1'})
-        self.assertEqual(cacheme_tags['test_instance_sec'].keys, {b'TEST:INST:2'})
-        self.assertEqual(cacheme_tags['three'].keys, {b'TEST:INST:3'})
-        cacheme_tags['three'].invalid_all()
-        self.assertEqual(cacheme_tags['three'].keys, set())
+        self.assertEqual(cacheme.tags['cache_inst_1'].keys, {b'TEST:INST:1'})
+        self.assertEqual(cacheme.tags['test_instance_sec'].keys, {b'TEST:INST:2'})
+        self.assertEqual(cacheme.tags['three'].keys, {b'TEST:INST:3'})
+        cacheme.tags['three'].invalid_all()
+        self.assertEqual(cacheme.tags['three'].keys, set())
 
     def test_invalidation_model(self):
         conn = get_redis_connection(settings.CACHEME['REDIS_CACHE_ALIAS'])

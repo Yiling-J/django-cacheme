@@ -1,8 +1,8 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
-from .utils import invalid_pattern, CACHEME
-from .cache_model import cacheme_tags
+from .utils import CACHEME
+from .cache_model import CacheMe as cacheme
 
 
 def default_pattern():
@@ -20,9 +20,9 @@ class Invalidation(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.pk:
-            invalid_pattern(self.pattern)
+            cacheme.utils.invalid_pattern(self.pattern)
             tags = self.tags.split(',')
             for tag in tags:
                 if tag:
-                    cacheme_tags[tag].invalid_all()
+                    cacheme.tags[tag].invalid_all()
         super().save(*args, **kwargs)
