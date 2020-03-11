@@ -20,7 +20,7 @@ class Invalidation(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.pk:
-            cacheme.utils.invalid_pattern(self.pattern)
+            cacheme.create_invalidation(pattern=self.pattern)
             tags = self.tags.split(',')
             for tag in tags:
                 if tag:

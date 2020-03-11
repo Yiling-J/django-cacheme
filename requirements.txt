@@ -1,3 +1,3 @@
 Django>=1.11
 django_redis>=4.10.0
-cacheme>=0.0.9
+cacheme>=0.1.0
