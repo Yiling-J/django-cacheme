@@ -73,7 +73,7 @@ class CacheTestCase(BaseTestCase):
         # lazy invalid, so if we get value directly, still old value
         result = conn.hget(settings.CACHEME['REDIS_CACHE_PREFIX'] + 'Test:123', 'base')
         self.assertEqual(pickle.loads(result), expect)
-        deletes = conn.smembers(settings.CACHEME['REDIS_CACHE_PREFIX'] + 'delete')
+        deletes = conn.smembers(cacheme.meta_keys.deleted)
         self.assertTrue(b'TEST:Test:123' in deletes)
 
         expect['check'] = 2
@@ -183,11 +183,11 @@ class CacheTestCase(BaseTestCase):
         self.cache_inst_1()
         self.cache_inst_2()
         self.cache_inst_3()
-        self.assertEqual(cacheme.tags['cache_inst_1'].invalid_all(), 1)
-        self.assertEqual(cacheme.tags['test_instance_sec'].invalid_all(), 1)
-        self.assertEqual(cacheme.tags['three'].invalid_all(), 1)
-        cacheme.tags['three'].invalid_all()
-        self.assertEqual(cacheme.tags['three'].invalid_all(), 0)
+        self.assertEqual(cacheme.tags['cache_inst_1'].objects.invalid(), 1)
+        self.assertEqual(cacheme.tags['test_instance_sec'].objects.invalid(), 1)
+        self.assertEqual(cacheme.tags['three'].objects.invalid(), 1)
+        cacheme.tags['three'].objects.invalid()
+        self.assertEqual(cacheme.tags['three'].objects.invalid(), 0)
 
     def test_invalidation_model(self):
         conn = get_redis_connection(settings.CACHEME['REDIS_CACHE_ALIAS'])
@@ -318,7 +318,7 @@ class CacheTestCase(BaseTestCase):
 
     def test_key_missing(self):
         conn = get_redis_connection(settings.CACHEME['REDIS_CACHE_ALIAS'])
-        conn.sadd('TEST:progress', 'TEST:CACHE:TH')
+        conn.sadd(cacheme.meta_keys.progress, 'TEST:CACHE:TH')
         start = datetime.datetime.now()
         result = self.cache_th(12)
         end = datetime.datetime.now()
