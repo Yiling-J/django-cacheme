@@ -16,6 +16,7 @@ from django.contrib.auth.models import User
 from django.contrib.admin.sites import AdminSite
 from django.test import RequestFactory
 from django_cacheme.admin import InvalidationAdmin
+from tests.testapp import nodes
 
 r = redis.Redis()
 
@@ -388,3 +389,56 @@ class AdminTestCase(BaseTestCase):
         self.assertTrue(form.is_valid())
         admin.save_model(request, obj2, form, False)
         self.assertEqual(Invalidation.objects.get(id=999).tags, 'test')
+
+
+class NodeCacheTestCase(BaseTestCase):
+
+    @cacheme(
+        node=lambda c: nodes.TestNodeUser(user=c.user)
+    )
+    def simple_test_func(self, user):
+        return {'result': user.id, 'check': self.check}
+
+    def test_cache_simple(self):
+        user = TestUser.objects.create(name='test')
+        self.check = 1
+        expect = {'result': user.id, 'check': self.check}
+        result = self.simple_test_func(user)
+        self.assertEqual(result, expect)
+
+        self.check = 2
+        result = self.simple_test_func(user)
+        self.assertEqual(result, expect)
+
+        user.name += 'cc'
+        user.save()
+        expect['check'] = 2
+        result = self.simple_test_func(user)
+        self.assertEqual(result, expect)
+
+    @cacheme(
+        node=lambda c: nodes.M2MTestNodeUser(user=c.user)
+    )
+    def m2m_test_func(self, user):
+        return {'result': user.id, 'check': self.check}
+
+    def test_cache_m2m(self):
+        user = TestUser.objects.create(name='test')
+        self.check = 1
+        expect = {'result': user.id, 'check': self.check}
+        result = self.m2m_test_func(user)
+        self.assertEqual(result, expect)
+
+        self.check = 2
+        book = Book.objects.create(name='b1')
+        user.books.add(book)
+        expect['check'] = 2
+        result = self.m2m_test_func(user)
+        self.assertEqual(result, expect)
+
+        self.check = 3
+        book2 = Book.objects.create(name='b2')
+        book2.users.add(user)
+        expect['check'] = 3
+        result = self.m2m_test_func(user)
+        self.assertEqual(result, expect)
