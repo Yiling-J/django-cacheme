@@ -8,8 +8,6 @@ model_signals = {}
 
 
 def invalid_cache(sender, instance, created=False, **kwargs):
-    if sender not in model_signals:
-        return
     if 'pre_' in kwargs.get('action', ''):
         return
 
@@ -22,10 +20,10 @@ def invalid_cache(sender, instance, created=False, **kwargs):
             pks = kwargs['pk_set']
             for pk in pks:
                 InvalidNode.objects.invalid(**{field_to: pk})
-    elif InvalidNode.meta.get('m2m'):  # post save/delete signal for m2m
-        fields = InvalidNode.fields
-        for field in fields:
-            InvalidNode.objects.invalid(**{field: getattr(instance, field)})
+    # elif InvalidNode.meta.get('m2m'):  # post save/delete signal for m2m
+    #     fields = InvalidNode.fields
+    #     for field in fields:
+    #         InvalidNode.objects.invalid(**{field: getattr(instance, field)})
     else:  # normal post save/delete signal
         InvalidNode.objects.invalid(instance=instance)
 
@@ -45,8 +43,6 @@ class ModelInvalidNode(nodes.InvalidNode):
         if 'instance' in kwargs and isinstance(kwargs['instance'], Model):
             for field in self.required_fields.keys():
                 kwargs[field] = getattr(kwargs['instance'], field)
-        else:
-            self.required_field = {key: '' for key in self.meta.fields}
 
     def _init_m2m(self, kwargs):
         for field in self.required_fields.keys():
@@ -56,7 +52,9 @@ class ModelInvalidNode(nodes.InvalidNode):
             elif value and isinstance(value, Model):
                 kwargs[field] = value.pk
             elif value:
-                raise Exception('Not support')
+                raise Exception(
+                    'value for field {field} should be instance or int/string'.format(field)
+                )
             else:
                 kwargs[field] = 'all'
 
@@ -65,7 +63,12 @@ class ModelInvalidNode(nodes.InvalidNode):
         if 'model' in cls.meta:
             model = cls.meta['model']
             if model in model_signals:
-                raise
+                raise Exception(
+                    'invalid node {node} using {model} already exists'.format(
+                        node=model_signals['model'],
+                        model=model
+                    )
+                )
             model_signals[model] = cls
             if cls.meta.get('m2m', False):
                 cls.m2m_models = dict()
@@ -74,8 +77,9 @@ class ModelInvalidNode(nodes.InvalidNode):
                     field_model = model_field.related_model
                     cls.m2m_models[field_model] = field
 
-                post_save.connect(invalid_cache, model)
-                post_delete.connect(invalid_cache, model)
+                # post_save/delete not support now
+                # post_save.connect(invalid_cache, model)
+                # post_delete.connect(invalid_cache, model)
                 m2m_changed.connect(invalid_cache, model)
             else:
                 post_save.connect(invalid_cache, model)
