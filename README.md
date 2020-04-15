@@ -26,7 +26,7 @@ CACHEME = {
     'REDIS_CACHE_PREFIX': 'MYCACHE:',  # cacheme key prefix, optional, 'CM:' as default
     'THUNDERING_HERD_RETRY_COUNT': 5,  # thundering herd retry count, if key missing, default 5
     'THUNDERING_HERD_RETRY_TIME': 20,  # thundering herd wait time(millisecond) between each retry, default 20
-	'STALE': True  # Global setting for using stale, default True
+    'STALE': True  # Global setting for using stale, default True
 }
 ```
 
@@ -52,7 +52,7 @@ signal func will get this property value, add ':invalid' to it, and then invalid
 ```
 class Book(models.Model):
     ...
-	
+
     @property
     def cache_key(self):
         return "Book:%s" % self.id
@@ -72,10 +72,10 @@ Book.users.through.m2m_cache_keys = {
 
     # book is instance, so pk_set are user ids, used in signal book.users.add(users)
     'Book': lambda ids: ['User:%s:books' % id for id in ids],
-	
+
     # user is instance, so pk_set are book ids, used in signal user.books.add(books)
     'TestUser': lambda ids: ['Book:%s:users' % id for id in ids],
-    
+
 }
 ```
 
@@ -105,8 +105,8 @@ class InvalidUserNode(nodes.ModelInvalidNode):
 
     class Meta:
         model = models.User
-		
-		
+
+
 class UserNode(nodes.Node):
     user = nodes.Field()
 
@@ -117,7 +117,7 @@ class UserNode(nodes.Node):
         return [
             invalid_nodes.InvalidUserNode(instance=self.user)
         ]
-		
+
 
 # create invalidation manually
 
@@ -156,7 +156,7 @@ class UserBookNode(nodes.Node):
         return [
             invalid_nodes.InvalidUserBookNode(user=self.user)
         ]
-		
+
 
 # create invalidation manually
 InvalidUserBookNode.objects.invalid(user=user)
