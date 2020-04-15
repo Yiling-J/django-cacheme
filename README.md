@@ -9,7 +9,7 @@ Django-Cacheme is a memoized/cache package for Django based on [Cacheme](https:/
 
 Cacheme features: https://github.com/Yiling-J/cacheme
 
-Django-Cacheme Extend Cacheme to support Django settings. Also integrate Django model signals automatically.
+Django-Cacheme Extend Cacheme to support Django settings, and integrate Django model signals automatically.
 Also provide an admin page to manage your cache.
 
 ## Getting started
@@ -30,19 +30,18 @@ CACHEME = {
 }
 ```
 
-Finally run migration before use
+Finally run migrate before use
 
 
 ## Features for Django
 
 #### - Cacheme Decorator
 
-Django-Cacheme add a new parameter to cacheme decorator:
+Django-Cacheme add new parameters to cacheme decorator:
 
 `invalid_models`/`invalid_m2m_models`: List, default []. Models and m2m models that will trigger the invalid
 signal, every model must has an invalid_key property(can be a list), and m2m model need m2m keys(see Model part).
 And when signal is called, all members in the model instance invalid key will be removed.
-
 
 #### - Model property/attribute
 
@@ -80,4 +79,88 @@ Book.users.through.m2m_cache_keys = {
 }
 ```
 
-#### - Model based node
+#### - Model based Node
+
+Django-Cacheme add a new node class called ModelInvalidNode, this invalid node class can handle model signal
+automatically. When using ModelInvalidNode, no need to add property/attribute to model any more.
+
+For model without m2m, just add `model = YourModel` to invalid node meta attributes. This will connect
+`post_save/delete` signals automatically. You can pass instance directly to ModelInvalidNode,
+`invalid_nodes.InvalidUserNode(instance=self.user)`, ModelInvalidNode will find value for all fields from this
+instance.
+
+For model with m2m, add `model = YourM2MModel` and `m2m = True` to class meta. You can't use instance for M2MNode. Instead, add the fk field in m2m model as fields in your invalid node. For example, `UserBook` model has 2 foreign keys `user` and `book`, you can use either `InvalidUserBookNode(user=self.user)` or `InvalidUserBookNode(book=self.book)`, first one will create invalid key: `user:{user_id}:book:all`, second one will create invalid key `user:all:book:{book_id}`
+
+Example:
+
+```
+from django_cacheme import nodes
+
+
+class InvalidUserNode(nodes.ModelInvalidNode):
+    id = nodes.Field()
+
+    def key(self):
+        return 'user:%s' % self.id
+
+    class Meta:
+        model = models.User
+		
+		
+class UserNode(nodes.Node):
+    user = nodes.Field()
+
+    def key(self):
+        return 'user:%s' % self.user.id
+
+    def invalid_nodes(self):
+        return [
+            invalid_nodes.InvalidUserNode(instance=self.user)
+        ]
+		
+
+# create invalidation manually
+
+# get fields from instance automatically
+InvalidUserNode.objects.invalid(instance=user)
+# or using field explictly
+InvalidUserNode.objects.invalid(id=user.id)
+
+```
+
+Example M2M:
+
+```
+from django_cacheme import nodes
+
+
+class InvalidUserBookNode(nodes.ModelInvalidNode):
+    user = nodes.Field()
+    book = nodes.Field()
+
+    def key(self):
+        return 'user:%s:book:%s' % (self.testuser, self.book)
+
+    class Meta:
+        model = models.TestUser.books.through
+        m2m = True
+
+
+class UserBookNode(nodes.Node):
+    user = nodes.Field()
+
+    def key(self):
+        return 'user:%s' % self.user.id
+
+    def invalid_nodes(self):
+        return [
+            invalid_nodes.InvalidUserBookNode(user=self.user)
+        ]
+		
+
+# create invalidation manually
+InvalidUserBookNode.objects.invalid(user=user)
+InvalidUserBookNode.objects.invalid(book=book)
+
+
+```

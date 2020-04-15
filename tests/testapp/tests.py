@@ -471,8 +471,8 @@ class NodeCacheTestCase(BaseTestCase):
         result = self.m2m_test_func(user)
         self.assertEqual(result, expect)
 
-        invalid_nodes.InvalidUserBookNode(testuser=user)
-        self.check = 1
+        invalid_nodes.InvalidUserBookNode.objects.invalid(testuser=user)
+        self.check = 2
         expect = {'result': user.id, 'check': self.check}
         result = self.m2m_test_func(user)
         self.assertEqual(result, expect)
