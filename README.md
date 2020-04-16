@@ -85,18 +85,18 @@ Book.users.through.m2m_cache_keys = {
 #### - Model based Node(for cacheme node mode)
 
 Django-Cacheme add a new invalid node class called `ModelInvalidNode`,
-this invalid node class handle model signal **automatically** for you when using ModelInvalidNode.
+this invalid node class handle model signal **automatically** for you.
 So no need to add property/attribute to model.
 
-Model without m2m, just add `model = YourModel` to invalid node meta attributes. This will connect
-`post_save/delete` signals automatically. You can use instance directly in ModelInvalidNode, for example,
-`invalid_nodes.InvalidUserNode(instance=self.user)`, ModelInvalidNode will find value for all fields from this
+Model **without** m2m, just add `model = YourModel` to invalid node meta attributes. This will connect
+`post_save/delete` signals automatically. You can use instance directly in `ModelInvalidNode`, for example,
+`invalid_nodes.InvalidUserNode(instance=self.user)`, `ModelInvalidNode` will get values for all fields from this
 instance.
 
-Model with m2m, First add `model = YourM2Model` and `m2m = True` to class meta.
-Then Add fk fields in m2m model as `nodes.Field` in your invalid node. For example,`UserBook` model
-has 2 foreign keys `user` and `book`, then yours fields in `InvalidNode` will be `user` and `book`. You can use either `InvalidUserBookNode(user=self.user)` or `InvalidUserBookNode(book=self.book)`,
-first one will create invalid key: `user:{user_id}:book:all`, second one will create invalid key `user:all:book:{book_id}`. You can also user str/int as field value, for example `InvalidUserBookNode(user=12)`, will create
+Model **with** m2m is special, you need to use intermediate model in node. First add `model = YourIntermediateModel` and `m2m = True` to class meta.
+Then Add fk fields in intermediate model as `nodes.Field`. For example,`UserBook` model
+has 2 foreign keys `user` and `book`, yours fields in `InvalidNode` will be `user` and `book`. You can use either `InvalidUserBookNode(user=self.user)` or `InvalidUserBookNode(book=self.book)`,
+first one will create invalid key: `user:{user_id}:book:all`, second one will create invalid key `user:all:book:{book_id}`. str/int as field value is also support, for example `InvalidUserBookNode(user=12)`, will create
 key `user:12:book:all`
 
 Example:
