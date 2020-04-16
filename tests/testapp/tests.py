@@ -434,6 +434,9 @@ class NodeCacheTestCase(BaseTestCase):
         result = self.simple_test_func(user)
         self.assertEqual(result, expect)
 
+        # test tag
+        self.assertEqual(cacheme.tags['TestNodeUser'].objects.invalid(), 1)
+
     @cacheme(
         node=lambda c: nodes.M2MTestNodeUser(user=c.user)
     )
