@@ -16,6 +16,7 @@ from django.contrib.auth.models import User
 from django.contrib.admin.sites import AdminSite
 from django.test import RequestFactory
 from django_cacheme.admin import InvalidationAdmin
+from tests.testapp import nodes, invalid_nodes
 
 r = redis.Redis()
 
@@ -73,7 +74,7 @@ class CacheTestCase(BaseTestCase):
         # lazy invalid, so if we get value directly, still old value
         result = conn.hget(settings.CACHEME['REDIS_CACHE_PREFIX'] + 'Test:123', 'base')
         self.assertEqual(pickle.loads(result), expect)
-        deletes = conn.smembers(settings.CACHEME['REDIS_CACHE_PREFIX'] + 'delete')
+        deletes = conn.smembers(cacheme.meta_keys.deleted)
         self.assertTrue(b'TEST:Test:123' in deletes)
 
         expect['check'] = 2
@@ -183,11 +184,11 @@ class CacheTestCase(BaseTestCase):
         self.cache_inst_1()
         self.cache_inst_2()
         self.cache_inst_3()
-        self.assertEqual(cacheme.tags['cache_inst_1'].invalid_all(), 1)
-        self.assertEqual(cacheme.tags['test_instance_sec'].invalid_all(), 1)
-        self.assertEqual(cacheme.tags['three'].invalid_all(), 1)
-        cacheme.tags['three'].invalid_all()
-        self.assertEqual(cacheme.tags['three'].invalid_all(), 0)
+        self.assertEqual(cacheme.tags['cache_inst_1'].objects.invalid(), 1)
+        self.assertEqual(cacheme.tags['test_instance_sec'].objects.invalid(), 1)
+        self.assertEqual(cacheme.tags['three'].objects.invalid(), 1)
+        cacheme.tags['three'].objects.invalid()
+        self.assertEqual(cacheme.tags['three'].objects.invalid(), 0)
 
     def test_invalidation_model(self):
         conn = get_redis_connection(settings.CACHEME['REDIS_CACHE_ALIAS'])
@@ -318,7 +319,7 @@ class CacheTestCase(BaseTestCase):
 
     def test_key_missing(self):
         conn = get_redis_connection(settings.CACHEME['REDIS_CACHE_ALIAS'])
-        conn.sadd('TEST:progress', 'TEST:CACHE:TH')
+        conn.sadd(cacheme.meta_keys.progress, 'TEST:CACHE:TH')
         start = datetime.datetime.now()
         result = self.cache_th(12)
         end = datetime.datetime.now()
@@ -388,3 +389,93 @@ class AdminTestCase(BaseTestCase):
         self.assertTrue(form.is_valid())
         admin.save_model(request, obj2, form, False)
         self.assertEqual(Invalidation.objects.get(id=999).tags, 'test')
+
+
+class NodeCacheTestCase(BaseTestCase):
+
+    @cacheme(
+        node=lambda c: nodes.TestNodeUser(user=c.user)
+    )
+    def simple_test_func(self, user):
+        return {'result': user.id, 'check': self.check}
+
+    def test_invalid_node(self):
+        user = TestUser.objects.create(name='test')
+        self.check = 1
+        expect = {'result': user.id, 'check': self.check}
+        result = self.simple_test_func(user)
+        self.assertEqual(result, expect)
+        invalid_nodes.InvalidUserNode.objects.invalid(instance=user)
+        self.check = 2
+        expect = {'result': user.id, 'check': self.check}
+        result = self.simple_test_func(user)
+        self.assertEqual(result, expect)
+
+        invalid_nodes.InvalidUserNode.objects.invalid(id=user.id)
+        self.check = 3
+        expect = {'result': user.id, 'check': self.check}
+        result = self.simple_test_func(user)
+        self.assertEqual(result, expect)
+
+    def test_cache_simple(self):
+        user = TestUser.objects.create(name='test')
+        self.check = 1
+        expect = {'result': user.id, 'check': self.check}
+        result = self.simple_test_func(user)
+        self.assertEqual(result, expect)
+
+        self.check = 2
+        result = self.simple_test_func(user)
+        self.assertEqual(result, expect)
+
+        user.name += 'cc'
+        user.save()
+        expect['check'] = 2
+        result = self.simple_test_func(user)
+        self.assertEqual(result, expect)
+
+        # test tag
+        self.assertEqual(cacheme.tags['TestNodeUser'].objects.invalid(), 1)
+
+    @cacheme(
+        node=lambda c: nodes.M2MTestNodeUser(user=c.user)
+    )
+    def m2m_test_func(self, user):
+        return {'result': user.id, 'check': self.check}
+
+    def test_cache_m2m(self):
+        user = TestUser.objects.create(name='test')
+        self.check = 1
+        expect = {'result': user.id, 'check': self.check}
+        result = self.m2m_test_func(user)
+        self.assertEqual(result, expect)
+
+        self.check = 2
+        book = Book.objects.create(name='b1')
+        user.books.add(book)
+        expect['check'] = 2
+        result = self.m2m_test_func(user)
+        self.assertEqual(result, expect)
+
+        self.check = 3
+        book2 = Book.objects.create(name='b2')
+        book2.users.add(user)
+        expect['check'] = 3
+        result = self.m2m_test_func(user)
+        self.assertEqual(result, expect)
+
+    def test_m2m_invalid_node(self):
+        with self.assertRaises(Exception):
+            invalid_nodes.InvalidUserBookNode(testuser={'id': 1})
+
+        user = TestUser.objects.create(name='test')
+        self.check = 1
+        expect = {'result': user.id, 'check': self.check}
+        result = self.m2m_test_func(user)
+        self.assertEqual(result, expect)
+
+        invalid_nodes.InvalidUserBookNode.objects.invalid(testuser=user)
+        self.check = 2
+        expect = {'result': user.id, 'check': self.check}
+        result = self.m2m_test_func(user)
+        self.assertEqual(result, expect)

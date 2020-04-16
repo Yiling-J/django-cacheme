@@ -24,5 +24,5 @@ class Invalidation(models.Model):
             tags = self.tags.split(',')
             for tag in tags:
                 if tag:
-                    cacheme.tags[tag].invalid_all()
+                    cacheme.tags[tag].objects.invalid()
         super().save(*args, **kwargs)

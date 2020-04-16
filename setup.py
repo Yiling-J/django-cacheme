@@ -16,7 +16,7 @@ setup(
     description=description,
     python_requires=">=3.5",
     install_requires=[
-        "cacheme>=0.1.0"
+        "cacheme>=0.1.1"
         "django_redis>=4.10.0",
     ],
     zip_safe=False,
