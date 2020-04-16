@@ -9,16 +9,17 @@ Django-Cacheme is a memoized/cache package for Django based on [Cacheme](https:/
 
 Cacheme features: https://github.com/Yiling-J/cacheme
 
-Django-Cacheme Extend Cacheme to support Django settings, and integrate Django model signals automatically.
+Django-Cacheme extend Cacheme to support Django settings, and integrate Django model signals automatically.
 Also provide an admin page to manage your cache.
 
 ## Getting started
 
 `pip install django-cacheme`
 
-Add 'django_cacheme' to your INSTALLED_APPS
+Add `django_cacheme` to your `INSTALLED_APPS`
 
-Update your Django settings:
+Update your Django settings, Django-Cacheme will initialize cacheme automatically:
+
 ```
 CACHEME = {
     'ENABLE_CACHE': True,
@@ -33,7 +34,9 @@ CACHEME = {
 Finally run migrate before use
 
 
-## Features for Django
+## How to use
+
+First, learn how to use cacheme: https://github.com/Yiling-J/cacheme
 
 #### - Cacheme Decorator
 
@@ -79,17 +82,22 @@ Book.users.through.m2m_cache_keys = {
 }
 ```
 
-#### - Model based Node
+#### - Model based Node(for cacheme node mode)
 
-Django-Cacheme add a new node class called ModelInvalidNode, this invalid node class can handle model signal
-automatically. When using ModelInvalidNode, no need to add property/attribute to model any more.
+Django-Cacheme add a new invalid node class called `ModelInvalidNode`,
+this invalid node class handle model signal **automatically** for you when using ModelInvalidNode.
+So no need to add property/attribute to model.
 
-For model without m2m, just add `model = YourModel` to invalid node meta attributes. This will connect
-`post_save/delete` signals automatically. You can pass instance directly to ModelInvalidNode,
+Model without m2m, just add `model = YourModel` to invalid node meta attributes. This will connect
+`post_save/delete` signals automatically. You can use instance directly in ModelInvalidNode, for example,
 `invalid_nodes.InvalidUserNode(instance=self.user)`, ModelInvalidNode will find value for all fields from this
 instance.
 
-For model with m2m, add `model = YourM2MModel` and `m2m = True` to class meta. You can't use instance for M2MNode. Instead, add the fk field in m2m model as fields in your invalid node. For example, `UserBook` model has 2 foreign keys `user` and `book`, you can use either `InvalidUserBookNode(user=self.user)` or `InvalidUserBookNode(book=self.book)`, first one will create invalid key: `user:{user_id}:book:all`, second one will create invalid key `user:all:book:{book_id}`
+Model with m2m, First add `model = YourM2Model` and `m2m = True` to class meta.
+Then Add fk fields in m2m model as `nodes.Field` in your invalid node. For example,`UserBook` model
+has 2 foreign keys `user` and `book`, then yours fields in `InvalidNode` will be `user` and `book`. You can use either `InvalidUserBookNode(user=self.user)` or `InvalidUserBookNode(book=self.book)`,
+first one will create invalid key: `user:{user_id}:book:all`, second one will create invalid key `user:all:book:{book_id}`. You can also user str/int as field value, for example `InvalidUserBookNode(user=12)`, will create
+key `user:12:book:all`
 
 Example:
 
