@@ -14,11 +14,11 @@ Also provide an admin page to manage your cache.
 
 ## Getting started
 
-`pip install django-cacheme`
+* `pip install django-cacheme`
 
-Add `django_cacheme` to your `INSTALLED_APPS`
+* Add `django_cacheme` to your `INSTALLED_APPS`
 
-Update your Django settings, Django-Cacheme will initialize cacheme automatically:
+* Update Django settings, Django-Cacheme will initialize cacheme automatically:
 
 ```
 CACHEME = {
@@ -31,16 +31,16 @@ CACHEME = {
 }
 ```
 
-Finally run migrate before use
+* Finally run migrate before use
 
 
 ## How to use
 
-First, learn how to use cacheme: https://github.com/Yiling-J/cacheme
+Read cacheme doc first: https://github.com/Yiling-J/cacheme
 
 #### - Cacheme Decorator
 
-Django-Cacheme add new parameters to cacheme decorator:
+`Django-Cacheme` add new parameters to cacheme decorator:
 
 `invalid_models`/`invalid_m2m_models`: List, default []. Models and m2m models that will trigger the invalid
 signal, every model must has an invalid_key property(can be a list), and m2m model need m2m keys(see Model part).
@@ -82,11 +82,9 @@ Book.users.through.m2m_cache_keys = {
 }
 ```
 
-#### - Model based Node(for cacheme node mode)
+#### - Model based Node
 
-Django-Cacheme add a new invalid node class called `ModelInvalidNode`,
-this invalid node class handle model signal **automatically** for you.
-So no need to add property/attribute to model.
+Django-Cacheme add a new invalid node class called `ModelInvalidNode`, this class handle model signal **automatically** for you. So no need to add property/attribute to model.
 
 Model **without** m2m, just add `model = YourModel` to invalid node meta attributes. This will connect
 `post_save/delete` signals automatically. You can use instance directly in `ModelInvalidNode`, for example,
