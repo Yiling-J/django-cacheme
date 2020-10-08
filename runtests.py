@@ -47,6 +47,7 @@ if not settings.configured:
             'django.contrib.sites',
             'django.contrib.admin',
             'django.contrib.sessions',
+            'django.contrib.messages',
             'django_cacheme',
             'tests.testapp'
         ),
