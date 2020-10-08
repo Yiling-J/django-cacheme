@@ -67,6 +67,7 @@ if not settings.configured:
                         'django.template.context_processors.request',
                         'django.template.context_processors.static',
                         'django.contrib.auth.context_processors.auth',
+                        'django.contrib.messages.context_processors.messages'
                     ),
                 },
             },
